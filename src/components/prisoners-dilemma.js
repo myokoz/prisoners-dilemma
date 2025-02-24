@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Timer, Users, History } from 'lucide-react';
+import { Timer, Users, History, Settings } from 'lucide-react';
 
 const PrisonersDilemma = () => {
   // ゲーム設定
@@ -15,6 +15,9 @@ const PrisonersDilemma = () => {
       betrayedPenalty: 0
     }
   });
+
+  // 設定変更モードのステート
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // ゲーム状態
   const [gameState, setGameState] = useState({
@@ -49,6 +52,33 @@ const PrisonersDilemma = () => {
 
     return () => clearInterval(timer);
   }, [gameState.isRoundActive, gameState.timeRemaining]);
+
+  // 設定変更ハンドラー
+  const handleSettingsChange = (e) => {
+    const { name, value } = e.target;
+    setGameSettings(prev => ({
+      ...prev,
+      [name]: parseInt(value)
+    }));
+  };
+
+  // ポイント設定変更ハンドラー
+  const handlePointsChange = (e) => {
+    const { name, value } = e.target;
+    setGameSettings(prev => ({
+      ...prev,
+      points: {
+        ...prev.points,
+        [name]: parseInt(value)
+      }
+    }));
+  };
+
+  // 設定を適用してゲームをリセット
+  const applySettings = () => {
+    startNewGame();
+    setIsSettingsOpen(false);
+  };
 
   // ラウンドの評価
   const evaluateRound = () => {
@@ -141,6 +171,13 @@ const PrisonersDilemma = () => {
     });
   };
 
+  // タイマーを見やすい形式に整形する関数
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="bg-white shadow-lg rounded-lg p-8">
@@ -154,11 +191,115 @@ const PrisonersDilemma = () => {
             <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg">
               <Timer className="w-5 h-5 text-blue-600" />
               <span className="text-lg font-semibold text-blue-600">
-                {gameState.timeRemaining}s
+                {formatTime(gameState.timeRemaining)}
               </span>
             </div>
+            {/* 設定ボタン - ゲーム開始前のみ表示 */}
+            {gameState.gameStatus === 'standby' && (
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="p-2 rounded-lg hover:bg-gray-100"
+              >
+                <Settings className="w-6 h-6 text-gray-700" />
+              </button>
+            )}
           </div>
         </div>
+
+        {/* 設定パネル */}
+        {isSettingsOpen && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Game Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-gray-900 font-medium">Thinking Time (seconds)</label>
+                <input
+                  type="number"
+                  name="roundDuration"
+                  value={gameSettings.roundDuration}
+                  onChange={handleSettingsChange}
+                  min="10"
+                  max="300"
+                  className="border-2 rounded-md p-2 text-gray-900"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-gray-900 font-medium">Total Rounds</label>
+                <input
+                  type="number"
+                  name="totalRounds"
+                  value={gameSettings.totalRounds}
+                  onChange={handleSettingsChange}
+                  min="1"
+                  max="50"
+                  className="border-2 rounded-md p-2 text-gray-900"
+                />
+              </div>
+            </div>
+
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">Point Settings</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+              <div className="flex flex-col gap-2">
+                <label className="text-gray-900 font-medium">Both Cooperate</label>
+                <input
+                  type="number"
+                  name="bothCooperate"
+                  value={gameSettings.points.bothCooperate}
+                  onChange={handlePointsChange}
+                  min="0"
+                  max="10"
+                  className="border-2 rounded-md p-2 text-gray-900"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-gray-900 font-medium">Both Betray</label>
+                <input
+                  type="number"
+                  name="bothBetray"
+                  value={gameSettings.points.bothBetray}
+                  onChange={handlePointsChange}
+                  min="0"
+                  max="10"
+                  className="border-2 rounded-md p-2 text-gray-900"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-gray-900 font-medium">Betrayer Reward</label>
+                <input
+                  type="number"
+                  name="betraySuccess"
+                  value={gameSettings.points.betraySuccess}
+                  onChange={handlePointsChange}
+                  min="0"
+                  max="10"
+                  className="border-2 rounded-md p-2 text-gray-900"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-gray-900 font-medium">Betrayed Penalty</label>
+                <input
+                  type="number"
+                  name="betrayedPenalty"
+                  value={gameSettings.points.betrayedPenalty}
+                  onChange={handlePointsChange}
+                  min="0"
+                  max="10"
+                  className="border-2 rounded-md p-2 text-gray-900"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={applySettings}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Apply Settings
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* プレイヤーセクション */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
